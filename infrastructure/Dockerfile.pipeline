@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1.7
+# =============================================================================
+# DataNexus Engine — Apache Beam / Dataflow Worker Image
+# =============================================================================
+# Extends the official Beam Python 3.11 SDK image and installs the exact
+# dependency pins from pipelines/requirements.txt so Dataflow workers boot
+# with ParseAndEnrich / CleaningTransform imports available.
+#
+# Build (from repository root):
+#   docker build -f infrastructure/Dockerfile.pipeline -t datanexus-pipeline .
+#
+# Submit a Flex Template or custom-container Dataflow job referencing this
+# image, e.g.:
+#   gcloud dataflow flex-template run standard-refinery \
+#     --template-file-gcs-location=gs://BUCKET/templates/standard_refinery.json \
+#     --image=gcr.io/PROJECT/datanexus-pipeline:TAG \
+#     --region=europe-west1
+# =============================================================================
+
+# Pin to the same Beam release declared in pipelines/requirements.txt.
+FROM apache/beam_python3.11_sdk:2.52.0
+
+LABEL org.opencontainers.image.title="datanexus-pipeline" \
+      org.opencontainers.image.description="DataNexus Engine Apache Beam worker environment" \
+      org.opencontainers.image.vendor="DataNexus"
+
+ARG PIPELINE_HOME=/pipeline
+WORKDIR ${PIPELINE_HOME}
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=${PIPELINE_HOME}
+
+# Install pinned GCP + Beam extras before copying sources (better layer cache).
+COPY pipelines/requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r /tmp/requirements.txt \
+    && rm /tmp/requirements.txt
+
+# Bundle refinery pipeline code and any shared modules.
+COPY pipelines/ ${PIPELINE_HOME}/
+
+# The base image ships /opt/apache/beam/boot as ENTRYPOINT — required for
+# Dataflow worker harness startup. Do not override it.
+#
+# For local smoke tests only:
+#   docker run --rm datanexus-pipeline \
+#     python standard_refinery.py --help

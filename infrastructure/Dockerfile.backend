@@ -1,0 +1,75 @@
+# syntax=docker/dockerfile:1.7
+# =============================================================================
+# DataNexus Engine — Backend Microservice Image
+# =============================================================================
+# Multi-stage build for the Node.js / TypeScript control-plane services.
+#
+# Build (from repository root):
+#   docker build -f infrastructure/Dockerfile.backend -t datanexus-backend .
+#
+# Run:
+#   docker run --rm -p 8080:8080 \
+#     -e DATABASE_URL=postgres://user:pass@host:5432/datanexus \
+#     datanexus-backend
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Stage 1 — production dependencies only
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS deps
+
+WORKDIR /app
+
+# Install only what runtime needs (keeps final layer small).
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --omit=dev --ignore-scripts \
+    && npm cache clean --force
+
+# ---------------------------------------------------------------------------
+# Stage 2 — compile TypeScript
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+COPY backend/tsconfig.json ./
+COPY backend/ ./
+
+RUN npm run build \
+    && npm prune --omit=dev
+
+# ---------------------------------------------------------------------------
+# Stage 3 — minimal production runtime
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS production
+
+LABEL org.opencontainers.image.title="datanexus-backend" \
+      org.opencontainers.image.description="DataNexus Engine control-plane microservice" \
+      org.opencontainers.image.vendor="DataNexus"
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    # Disable npm update notifier and reduce memory spikes on small pods.
+    NPM_CONFIG_UPDATE_NOTIFIER=false
+
+# Run as an unprivileged user.
+RUN addgroup -g 1001 -S datanexus \
+    && adduser -S datanexus -u 1001 -G datanexus
+
+# Copy compiled artifacts and production node_modules from earlier stages.
+COPY --from=build --chown=datanexus:datanexus /app/dist ./dist
+COPY --from=deps --chown=datanexus:datanexus /app/node_modules ./node_modules
+COPY --chown=datanexus:datanexus backend/package.json ./
+
+USER datanexus
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["node", "dist/index.js"]
