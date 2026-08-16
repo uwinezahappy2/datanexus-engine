@@ -1,0 +1,15 @@
+# Dependency Directories
+node_modules/
+dist/
+.next/
+out/
+
+# Local Environment Variables & Secrets
+.env
+.env.local
+.env.development.local
+
+# Operating System Trash Files
+.DS_Store
+Thumbs.db
+*.log

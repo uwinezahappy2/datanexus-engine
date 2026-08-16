@@ -4,15 +4,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors")); // Import the new security bypass layer
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
+// Enable CORS so our frontend on port 3000 can safely communicate with port 5000
+app.use((0, cors_1.default)({ origin: 'http://localhost:3000' }));
 // Enable JSON middleware so our server can read form payloads sent from the frontend
 app.use(express_1.default.json());
 // Create an HTTP POST route for incoming onboarding submissions
 app.post('/api/tenants/onboard', async (req, res) => {
     console.log("📥 Received incoming onboarding payload from frontend dashboard...");
     const { legalName, tenantCode, residencyZone, billingAccountId } = req.body;
-    // Simple runtime validation checks
     if (!legalName || !tenantCode || !residencyZone || !billingAccountId) {
         res.status(400).json({
             success: false,
@@ -21,9 +23,7 @@ app.post('/api/tenants/onboard', async (req, res) => {
         return;
     }
     try {
-        // Run the onboarding logic using our established tenant module
         console.log(`Executing isolated system construction for: ${legalName}`);
-        // In production, this would execute against your local database container
         res.status(201).json({
             success: true,
             message: "Tenant onboarding matrix initialized successfully!",
