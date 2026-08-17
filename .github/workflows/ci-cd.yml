@@ -1,0 +1,40 @@
+name: DataNexus Core Control Plane CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout Repository Source Code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Set Up Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: ⚙️ Install Backend Dependencies
+      run: |
+        cd backend
+        npm ci
+
+    - name: 🛡️ Compile TypeScript Control Plane
+      run: |
+        cd backend
+        npx tsc --project tsconfig.json
+
+    - name: 🐋 Verify Docker Infrastructure Blueprints
+      run: |
+        docker build -t datanexus-backend:test -f infrastructure/Dockerfile.backend .
+        docker build -t datanexus-pipeline:test -f infrastructure/Dockerfile.pipeline .
+
+    - name: 🎉 Success Notification
+      run: echo "DataNexus Core Control Pipeline passed all integration gates cleanly!"
