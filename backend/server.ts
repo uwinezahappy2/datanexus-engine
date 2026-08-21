@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 import { hashPassword, verifyPassword, generateToken } from './authService';
 import jwt from 'jsonwebtoken';
 
@@ -10,7 +12,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'datanexus_super_secure_vault_key_2
 app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
-// A completely clean, dynamic in-memory database store
+// A completely clean, dynamic in-memory database store for operator roles
 const mockOperatorsDatabase: any[] = [];
 
 // 🔐 CUSTOM MIDDLEWARE: Protects sensitive infrastructure deployment paths
@@ -20,12 +22,15 @@ interface AuthenticatedRequest extends Request {
 
 function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-
-  if (!token) {
+  
+  // Guard clause to handle missing auth headers cleanly
+  if (!authHeader) {
     res.status(401).json({ success: false, message: "Access Denied: Missing digital identity token." });
     return;
   }
+
+  // Handle both standard space-separated Bearer tokens and raw terminal inputs securely
+  const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
@@ -96,9 +101,9 @@ app.post('/api/auth/login', async (req: Request, res: Response): Promise<void> =
   });
 });
 
-// 🌐 ARMORED API ROUTE: Secure infrastructure onboarding payload
+// 🌐 ARMORED & AUTOMATED API ROUTE: Generates live production K8s blueprints in real-time
 app.post('/api/tenants/onboard', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  console.log("📥 Verified token signature! Processing onboarding payload...");
+  console.log("📥 Verified token signature! Initializing structural isolation generator...");
   const { legalName, tenantCode, residencyZone, billingAccountId } = req.body;
 
   if (!legalName || !tenantCode || !residencyZone || !billingAccountId) {
@@ -106,17 +111,48 @@ app.post('/api/tenants/onboard', authenticateToken, async (req: AuthenticatedReq
     return;
   }
 
-  res.status(201).json({
-    success: true,
-    message: "Tenant onboarding matrix initialized securely via armored token context!",
-    data: {
-      tenantCode,
-      gkeNamespace: `tenant-${tenantCode.toLowerCase()}`,
-      bqDatasetId: `datanexus_tenant_${tenantCode.toLowerCase()}`,
-      status: "PROVISIONING",
-      authorizedBy: req.user.email
+  const cleanCode = tenantCode.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+  const targetNamespace = `tenant-${cleanCode.toLowerCase()}`;
+
+  // 🤖 THE INFRASTRUCTURE-AS-CODE ENGINE: This dynamically constructs a fresh Kubernetes Namespace manifest file!
+  const k8sManifestContent = `apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${targetNamespace}
+  labels:
+    tier: tenant-isolation-layer
+    compliance: data-residency-${residencyZone.toLowerCase()}
+    billing-id: ${billingAccountId.toLowerCase()}
+`;
+
+  try {
+    const targetFolder = path.join(__dirname, '../../infrastructure/k8s');
+    
+    // Ensure directory exists securely on disk
+    if (!fs.existsSync(targetFolder)) {
+      fs.mkdirSync(targetFolder, { recursive: true });
     }
-  });
+
+    const targetFilePath = path.join(targetFolder, `namespace-${targetNamespace}.yaml`);
+    fs.writeFileSync(targetFilePath, k8sManifestContent, 'utf8');
+    console.log(`🛠️ Automated Cloud Mapping Complete: Saved production GKE manifest to ${targetFilePath}`);
+
+    res.status(201).json({
+      success: true,
+      message: "Tenant infrastructure isolation matrix generated and written to disk successfully!",
+      data: {
+        tenantCode: cleanCode,
+        gkeNamespace: targetNamespace,
+        bqDatasetId: `datanexus_tenant_${cleanCode.toLowerCase()}`,
+        generatedManifestPath: `infrastructure/k8s/namespace-${targetNamespace}.yaml`,
+        status: "PROVISIONING_MANIFEST_READY",
+        authorizedBy: req.user.email
+      }
+    });
+  } catch (error) {
+    console.error("❌ Infrastructure writing error:", error);
+    res.status(500).json({ success: false, message: "Internal Cloud Manifest Generation Failure" });
+  }
 });
 
 app.listen(PORT, () => {
