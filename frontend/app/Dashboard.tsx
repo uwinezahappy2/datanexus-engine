@@ -3,18 +3,15 @@
 import React, { useState } from 'react';
 
 export default function DataNexusOperatorDashboard() {
-  // Authentication State Variables
   const [email, setEmail] = useState('admin@datanexus.io');
   const [password, setPassword] = useState('secure_admin123');
   const [token, setToken] = useState('');
   
-  // Infrastructure Parameters State
   const [legalName, setLegalName] = useState('Acme Logistics Ltd');
   const [tenantCode, setTenantCode] = useState('ACME_LOGISTICS');
   const [residencyZone, setResidencyZone] = useState('EU');
   const [billingAccountId, setBillingAccountId] = useState('BILL-2026-X892');
 
-  // Interactive UI Terminal Logging Traces
   const [logs, setLogs] = useState<string[]>(['🎯 DataNexus Portal Initialized: Ready to orchestrate global parameters...']);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,21 +21,18 @@ export default function DataNexusOperatorDashboard() {
     setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
   };
 
-  // 🔐 FUNCTION 1: Authenticates the operator against the live Render API
   const handleSystemLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     addLog(`🔑 Dispatching authorization payload to: ${BACKEND_URL}/api/auth/login`);
 
     try {
-      // Step A: Attempt auto-registration in case it's a fresh database run
       await fetch(`${BACKEND_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      // Step B: Authenticate dynamically
       const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,17 +48,16 @@ export default function DataNexusOperatorDashboard() {
         addLog(`❌ Security Rejection: ${result.message || 'Invalid operational credentials.'}`);
       }
     } catch (err) {
-      addLog(`❌ Network Error connecting to live API node. Verify your Render instance is active.`);
+      addLog(`❌ Network Error connecting to live API node.`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 🌐 FUNCTION 2: Submits tenant criteria to compile automated Kubernetes manifests
   const handleOnboardTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      addLog('⚠️ Operation Intercepted: You must fetch a secure JWT token before generating infrastructure configurations.');
+      addLog('⚠️ Operation Intercepted: You must fetch a secure JWT token.');
       return;
     }
 
@@ -76,7 +69,7 @@ export default function DataNexusOperatorDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token, // Encapsulate our time-locked token identity
+          'Authorization': token,
         },
         body: JSON.stringify({ legalName, tenantCode, residencyZone, billingAccountId }),
       });
@@ -91,7 +84,7 @@ export default function DataNexusOperatorDashboard() {
         addLog(`❌ Infrastructure Error: ${result.message}`);
       }
     } catch (err) {
-      addLog(`❌ Network Connection Error during dynamic compilation layout loops.`);
+      addLog(`❌ Network Connection Error.`);
     } finally {
       setIsLoading(false);
     }
@@ -99,19 +92,13 @@ export default function DataNexusOperatorDashboard() {
 
   return (
     <div style={{ backgroundColor: '#0f172a', color: '#f8fafc', minHeight: '100vh', padding: '40px', fontFamily: 'monospace' }}>
-      
-      {/* Top Brand Navbar Row */}
       <header style={{ borderBottom: '2px solid #1e293b', paddingBottom: '20px', marginBottom: '40px' }}>
         <h1 style={{ color: '#0284c7', fontSize: '28px', margin: 0 }}>⚡ DATANEXUS ENGINE</h1>
         <p style={{ color: '#94a3b8', fontSize: '13px', marginTop: '5px' }}>Production Multi-Tenant Orchestration Console Plane</p>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-        
-        {/* Left Interactive Operations Columns */}
         <div>
-          
-          {/* Box A: Operator Security Gate */}
           <div style={{ backgroundColor: '#1e293b', padding: '25px', borderRadius: '8px', marginBottom: '30px', border: token ? '1px solid #22c55e' : '1px solid #334155' }}>
             <h2 style={{ fontSize: '16px', color: '#38bdf8', marginTop: 0 }}>🔐 [STEP 1] ADMIN OPERATOR AUTHENTICATION</h2>
             <form onSubmit={handleSystemLogin} style={{ marginTop: '20px' }}>
@@ -124,12 +111,11 @@ export default function DataNexusOperatorDashboard() {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', backgroundColor: '#0f172a', border: '1px solid #475569', padding: '10px', color: '#fff', borderRadius: '4px', marginTop: '5px' }} required />
               </div>
               <button type="submit" disabled={isLoading} style={{ backgroundColor: token ? '#15803d' : '#0284c7', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
-                {token ? '⚡ JWT TOKEN CACHED (RE-AUTHENTICATE)' : '🔑 GENERATE SECURE SECURE TOKEN'}
+                {token ? '⚡ JWT TOKEN CACHED (RE-AUTHENTICATE)' : '🔑 GENERATE SECURE TOKEN'}
               </button>
             </form>
           </div>
 
-          {/* Box B: Dynamic Infrastructure Orchestrator Form */}
           <div style={{ backgroundColor: '#1e293b', padding: '25px', borderRadius: '8px', border: '1px solid #334155' }}>
             <h2 style={{ fontSize: '16px', color: '#38bdf8', marginTop: 0 }}>🌐 [STEP 2] LIVE TENANT ONBOARDING ENGINE</h2>
             <form onSubmit={handleOnboardTenant} style={{ marginTop: '20px' }}>
@@ -162,12 +148,21 @@ export default function DataNexusOperatorDashboard() {
               </button>
             </form>
           </div>
-
         </div>
 
-        {/* Right Columns: Real-Time Operational Terminal Logs */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flex: 1, backgroundColor: '#020617', borderRadius: '8px', padding: '25px', border: '1px solid #1e293b', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.6)' }}>
+          <div style={{ flex: 1, backgroundColor: '#020617', borderRadius: '8px', padding: '25px', border: '1px solid #1e293b' }}>
             <h2 style={{ fontSize: '14px', color: '#22c55e', marginTop: 0, borderBottom: '1px solid #1e293b', paddingBottom: '10px' }}>📟 SYSTEM REFINERY PRODUCTION LOG OUTPUT</h2>
             <div style={{ height: '420px', overflowY: 'auto', marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
               {logs.map((log, index) => (
+                <div key={index} style={{ color: log.includes('❌') ? '#ef4444' : log.includes('🎉') ? '#22c55e' : log.includes('🎟️') ? '#a855f7' : '#e2e8f0', lineHeight: '1.5' }}>
+                  {log}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
