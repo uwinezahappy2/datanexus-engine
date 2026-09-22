@@ -15,7 +15,8 @@ export default function DataNexusOperatorDashboard() {
   const [logs, setLogs] = useState<string[]>(['🎯 DataNexus Portal Initialized: Ready to orchestrate global parameters...']);
   const [isLoading, setIsLoading] = useState(false);
 
-  const BACKEND_URL = 'https://onrender.com';
+  const BACKEND_URL = 'https://datanexus-backend-api.onrender.com';
+
 
   const addLog = (msg: string) => {
     setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
