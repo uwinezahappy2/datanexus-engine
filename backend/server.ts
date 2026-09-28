@@ -9,7 +9,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'datanexus_super_secure_vault_key_2026';
 
-app.use(cors({ origin: 'http://localhost:3000' }));
+// 🌐 UPDATED PRODUCTION CORS RULE: Allows your live frontend app to communicate across the internet!
+app.use(cors({
+  origin: '*', // Allows all public web origins to connect safely to your orchestration API
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
 app.use(express.json());
 
 // A completely clean, dynamic in-memory database store for operator roles
@@ -23,13 +29,11 @@ interface AuthenticatedRequest extends Request {
 function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
   
-  // Guard clause to handle missing auth headers cleanly
   if (!authHeader) {
     res.status(401).json({ success: false, message: "Access Denied: Missing digital identity token." });
     return;
   }
 
-  // Handle both standard space-separated Bearer tokens and raw terminal inputs securely
   const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -114,7 +118,6 @@ app.post('/api/tenants/onboard', authenticateToken, async (req: AuthenticatedReq
   const cleanCode = tenantCode.toUpperCase().replace(/[^A-Z0-9_]/g, '');
   const targetNamespace = `tenant-${cleanCode.toLowerCase()}`;
 
-  // 🤖 THE INFRASTRUCTURE-AS-CODE ENGINE: This dynamically constructs a fresh Kubernetes Namespace manifest file!
   const k8sManifestContent = `apiVersion: v1
 kind: Namespace
 metadata:
@@ -128,7 +131,6 @@ metadata:
   try {
     const targetFolder = path.join(__dirname, '../../infrastructure/k8s');
     
-    // Ensure directory exists securely on disk
     if (!fs.existsSync(targetFolder)) {
       fs.mkdirSync(targetFolder, { recursive: true });
     }
@@ -156,5 +158,5 @@ metadata:
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Secure DataNexus Control Plane Server active on http://localhost:5000`);
+  console.log(`🚀 Secure DataNexus Control Plane Server active on Port ${PORT}`);
 });
