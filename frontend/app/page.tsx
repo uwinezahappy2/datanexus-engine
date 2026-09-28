@@ -26,17 +26,26 @@ export default function DataNexusOperatorDashboard() {
     e.preventDefault();
     setIsLoading(true);
     addLog(`🔑 Dispatching authorization payload to: ${BACKEND_URL}/api/auth/login`);
+    addLog(`⏳ Note: Free hosting servers take around 50 seconds to wake up on the first request...`);
 
     try {
+      // Step A: Attempt auto-registration with explicit headers to clear CORS blocks
       await fetch(`${BACKEND_URL}/api/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email, password }),
       });
 
+      // Step B: Authenticate dynamically
       const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ email, password }),
       });
 
@@ -49,7 +58,7 @@ export default function DataNexusOperatorDashboard() {
         addLog(`❌ Security Rejection: ${result.message || 'Invalid operational credentials.'}`);
       }
     } catch (err) {
-      addLog(`❌ Network Error connecting to live API node.`);
+      addLog(`❌ Connection dropped. The server container is still booting up. Please wait 10 seconds and click the button again!`);
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +79,7 @@ export default function DataNexusOperatorDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': token,
         },
         body: JSON.stringify({ legalName, tenantCode, residencyZone, billingAccountId }),
@@ -85,7 +95,7 @@ export default function DataNexusOperatorDashboard() {
         addLog(`❌ Infrastructure Error: ${result.message}`);
       }
     } catch (err) {
-      addLog(`❌ Network Connection Error.`);
+      addLog(`❌ Network Connection Error during dynamic compilation layout loops.`);
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +122,7 @@ export default function DataNexusOperatorDashboard() {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', backgroundColor: '#0f172a', border: '1px solid #475569', padding: '10px', color: '#fff', borderRadius: '4px', marginTop: '5px' }} required />
               </div>
               <button type="submit" disabled={isLoading} style={{ backgroundColor: token ? '#15803d' : '#0284c7', color: '#fff', border: 'none', padding: '12px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
-                {token ? '⚡ JWT TOKEN CACHED (RE-AUTHENTICATE)' : '🔑 GENERATE SECURE TOKEN'}
+                {isLoading ? '⏳ WAKING UP SERVER INFRASTRUCTURE...' : token ? '⚡ JWT TOKEN CACHED (RE-AUTHENTICATE)' : '🔑 GENERATE SECURE TOKEN'}
               </button>
             </form>
           </div>
